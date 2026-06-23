@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rocket Relay — Banker Script Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f6f3ec;
+    --ink:#1c1f2b;
+    --ink-soft:#5b5f6e;
+    --line:#ddd6c6;
+    --rocket:#DE3341;
+    --rocket-deep:#A8202C;
+    --rocket-bg:#fcebed;
+    --amber:#9a6308;
+    --amber-bg:#fbe9c8;
+    --amber-line:#e4c47e;
+    --teal:#0f5f59;
+    --teal-bg:#d9efec;
+    --teal-line:#a9d4cd;
+    --banana:#DE3341;
+    --banana-bg:#fcebed;
+    --banana-line:#f3c0c5;
+    --surface:#ffffff;
+    --shadow:0 1px 2px rgba(28,31,43,.06), 0 10px 28px rgba(28,31,43,.07);
+    --radius:10px;
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',system-ui,sans-serif;
+    line-height:1.45;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:'Fraunces',serif;margin:0;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  a{color:inherit;}
+  button{font-family:inherit;cursor:pointer;}
+  :focus-visible{outline:2px solid var(--rocket-deep);outline-offset:2px;border-radius:4px;}
+
+  .app{max-width:1320px;margin:0 auto;padding:20px 20px 40px;}
+
+  /* ---------- Topbar ---------- */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:16px;flex-wrap:wrap;
+    padding-bottom:16px;border-bottom:2px solid var(--ink);
+    margin-bottom:18px;
+  }
+  .brand{display:flex;align-items:center;gap:11px;}
+  .brand-badge{
+    width:36px;height:36px;border-radius:50%;background:#fff;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 1px 2px rgba(28,31,43,.12), 0 3px 8px rgba(28,31,43,.10);
+  }
+  .brand-badge svg{width:18px;height:18px;}
+  .brand-text{display:flex;align-items:baseline;gap:10px;}
+  .brand h1{font-size:1.7rem;font-weight:700;letter-spacing:-0.01em;}
+  .brand .tag{font-size:.72rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.08em;}
+  .call-meta{display:flex;gap:18px;align-items:center;flex-wrap:wrap;font-size:.86rem;color:var(--ink-soft);}
+  .call-meta strong{color:var(--ink);}
+  .status-pill{
+    background:var(--rocket);color:#fff;font-size:.72rem;font-weight:600;
+    padding:4px 10px;border-radius:100px;letter-spacing:.04em;text-transform:uppercase;
+  }
+  .reset-btn{
+    background:transparent;border:1px solid var(--line);color:var(--ink-soft);
+    padding:7px 13px;border-radius:8px;font-size:.82rem;font-weight:500;
+  }
+  .reset-btn:hover{border-color:var(--ink-soft);color:var(--ink);}
+
+  /* ---------- Layout ---------- */
+  .layout{
+    display:grid;
+    grid-template-columns:240px minmax(0,1fr) 340px;
+    gap:18px;
+    align-items:start;
+  }
+  @media (max-width:1080px){
+    .layout{grid-template-columns:1fr;}
+  }
+
+  .panel{
+    background:var(--surface);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    overflow:hidden;
+  }
+  .panel-head{
+    padding:13px 16px;border-bottom:1px solid var(--line);
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+  }
+  .panel-head h2{font-size:.95rem;font-weight:600;}
+  .panel-body{padding:14px 16px;}
+  .eyebrow{
+    font-size:.68rem;text-transform:uppercase;letter-spacing:.09em;color:var(--ink-soft);
+    font-weight:600;
+  }
+
+  /* ---------- Banana Phone panel ---------- */
+  .banana-panel .panel-head{background:var(--banana-bg);border-bottom:1px solid var(--banana-line);}
+  .banana-panel .panel-head h2{display:flex;align-items:center;gap:7px;color:var(--banana);}
+  .banana-icon{width:16px;height:16px;flex:none;}
+  .banana-source-note{
+    font-size:.72rem;color:var(--ink-soft);padding:10px 16px;
+    background:var(--banana-bg);border-bottom:1px dashed var(--banana-line);
+    font-style:italic;
+  }
+  .opp-call{
+    border:1px solid var(--line);border-radius:8px;padding:10px 11px;margin-bottom:10px;
+    background:#fffdf6;
+  }
+  .opp-call.is-current{border-color:var(--banana-line);background:var(--banana-bg);}
+  .opp-call:last-child{margin-bottom:0;}
+  .opp-call-top{display:flex;justify-content:space-between;align-items:baseline;gap:6px;font-size:.78rem;}
+  .opp-call-top .name{font-weight:600;}
+  .opp-call-top .id{color:var(--ink-soft);font-size:.7rem;}
+  .opp-score-row{display:flex;align-items:center;gap:7px;margin-top:6px;}
+  .opp-score-bar{flex:1;height:5px;background:var(--line);border-radius:4px;overflow:hidden;}
+  .opp-score-fill{height:100%;background:var(--banana);}
+  .opp-score-num{font-size:.7rem;font-weight:600;color:var(--banana);min-width:24px;text-align:right;}
+  .opp-reason{font-size:.74rem;color:var(--ink-soft);margin-top:5px;}
+  .opp-current-flag{font-size:.68rem;color:var(--banana);font-weight:600;margin-top:5px;display:block;}
+
+  .script-tip{
+    margin-top:14px;padding:10px 11px;border-radius:8px;
+    background:#fffdf6;border:1px dashed var(--banana-line);font-size:.78rem;
+  }
+  .script-tip .eyebrow{color:var(--banana);}
+  .script-tip p{margin:6px 0 0;}
+
+  /* ---------- Transcript panel ---------- */
+  .transcript-panel .panel-head{background:#f1eee5;}
+  .transcript-hint{font-size:.78rem;color:var(--ink-soft);padding:10px 16px;border-bottom:1px solid var(--line);}
+  .transcript{padding:6px 0;}
+  .t-row{
+    display:grid;grid-template-columns:18px 1fr;gap:0;
+    padding:9px 16px 9px 8px;border-bottom:1px solid #f0ecdf;
+    position:relative;
+  }
+  .t-row:last-child{border-bottom:none;}
+  .t-marker{position:relative;}
+  .t-marker .tick{
+    position:absolute;left:6px;top:6px;bottom:-1px;width:3px;border-radius:3px;background:transparent;
+  }
+  .t-row.has-issue .tick{background:var(--amber-line);}
+  .t-row.has-priority .tick{background:var(--teal-line);}
+  .t-row.is-marked.has-issue .tick{background:var(--amber);}
+  .t-row.is-marked.has-priority .tick{background:var(--teal);}
+
+  .t-bubble{display:flex;flex-direction:column;gap:3px;}
+  .t-speaker-line{display:flex;align-items:baseline;gap:8px;}
+  .t-speaker{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;}
+  .t-speaker.jordan{color:var(--rocket-deep);}
+  .t-speaker.morgan{color:var(--ink);}
+  .t-time{font-size:.68rem;color:var(--ink-soft);}
+  .t-text{font-size:.92rem;}
+
+  .t-tagbtns{display:flex;gap:6px;margin-top:5px;}
+  .tagbtn{
+    border:1px solid var(--line);background:#fff;border-radius:100px;
+    font-size:.68rem;font-weight:600;padding:3px 9px;display:inline-flex;align-items:center;gap:4px;
+  }
+  .tagbtn.issue{border-color:var(--amber-line);color:var(--amber);}
+  .tagbtn.issue.active{background:var(--amber);color:#fff;border-color:var(--amber);}
+  .tagbtn.priority{border-color:var(--teal-line);color:var(--teal);}
+  .tagbtn.priority.active{background:var(--teal);color:#fff;border-color:var(--teal);}
+  .tagbtn:hover{filter:brightness(0.97);}
+
+  .annot{
+    margin-top:7px;padding:9px 10px;border-radius:7px;font-size:.78rem;
+    display:none;
+  }
+  .annot.open{display:block;}
+  .annot.issue{background:var(--amber-bg);border:1px solid var(--amber-line);}
+  .annot.priority{background:var(--teal-bg);border:1px solid var(--teal-line);}
+  .annot .annot-label{font-weight:700;font-size:.7rem;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px;display:block;}
+  .for-banker{font-weight:500;text-transform:none;letter-spacing:0;opacity:.65;}
+  .annot.issue .annot-label{color:var(--amber);}
+  .annot.priority .annot-label{color:var(--teal);}
+  .annot .cite{font-size:.72rem;}
+  .annot .next{margin-top:5px;padding-top:5px;border-top:1px dashed currentColor;opacity:.9;}
+  .annot .next b{font-weight:700;}
+
+  /* ---------- Side stack ---------- */
+  .side-stack{display:flex;flex-direction:column;gap:16px;}
+
+  .issues-panel .panel-head{background:var(--amber-bg);border-bottom:1px solid var(--amber-line);}
+  .issues-panel .panel-head h2{color:var(--amber);}
+  .priorities-panel .panel-head{background:var(--teal-bg);border-bottom:1px solid var(--teal-line);}
+  .priorities-panel .panel-head h2{color:var(--teal);}
+
+  .count-pill{
+    font-size:.7rem;font-weight:700;border-radius:100px;padding:2px 8px;background:#fff;
+  }
+  .issues-panel .count-pill{color:var(--amber);}
+  .priorities-panel .count-pill{color:var(--teal);}
+
+  .empty-state{font-size:.8rem;color:var(--ink-soft);font-style:italic;}
+
+  .log-card{
+    border-radius:8px;padding:10px 11px;margin-bottom:10px;font-size:.8rem;
+  }
+  .log-card:last-child{margin-bottom:0;}
+  .issues-panel .log-card{background:var(--amber-bg);border:1px solid var(--amber-line);}
+  .priorities-panel .log-card{background:var(--teal-bg);border:1px solid var(--teal-line);}
+  .log-card .reg{font-weight:700;font-size:.78rem;}
+  .issues-panel .log-card .reg{color:var(--amber-deep,#7a4e06);}
+  .priorities-panel .log-card .reg{color:#0c4a45;}
+  .log-card .quote{font-style:italic;margin:5px 0;color:var(--ink-soft);}
+  .log-card .next{margin-top:5px;padding-top:5px;border-top:1px dashed rgba(0,0,0,.15);}
+
+  /* ---------- Script builder ---------- */
+  .script-panel .panel-head{background:#f1eee5;}
+  .channel-tabs{display:flex;gap:6px;margin-bottom:10px;}
+  .channel-tab{
+    flex:1;padding:7px 0;text-align:center;border:1px solid var(--line);border-radius:7px;
+    background:#fff;font-size:.78rem;font-weight:600;color:var(--ink-soft);
+  }
+  .channel-tab.active{background:var(--ink);color:#fff;border-color:var(--ink);}
+  .gen-btn{
+    width:100%;padding:10px 0;border-radius:8px;border:none;background:var(--rocket);color:#fff;
+    font-weight:700;font-size:.88rem;margin-top:4px;
+  }
+  .gen-btn:hover{background:var(--rocket-deep);}
+  .gen-btn:disabled{background:var(--line);color:var(--ink-soft);cursor:not-allowed;}
+  .script-output{
+    margin-top:12px;padding:11px 12px;border-radius:8px;background:#f6f3ec;border:1px solid var(--line);
+    font-size:.82rem;white-space:pre-wrap;min-height:60px;
+  }
+  .script-output .ph{color:var(--ink-soft);font-style:italic;}
+  .script-actions{display:flex;gap:8px;margin-top:10px;}
+  .script-actions button{
+    flex:1;padding:8px 0;border-radius:7px;font-size:.8rem;font-weight:600;
+  }
+  .approve-btn{background:var(--ink);color:#fff;border:none;}
+  .approve-btn:hover{background:#000;}
+  .change-btn{background:transparent;border:1px solid var(--line);color:var(--ink-soft);}
+  .change-btn:hover{border-color:var(--ink-soft);color:var(--ink);}
+  .toast{
+    margin-top:9px;font-size:.74rem;color:var(--teal);font-weight:600;display:none;
+  }
+  .toast.show{display:block;}
+
+  footer.disclaimer{
+    margin-top:22px;font-size:.74rem;color:var(--ink-soft);line-height:1.5;
+    border-top:1px solid var(--line);padding-top:14px;
+  }
+  footer.disclaimer strong{color:var(--ink);}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;animation:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <span class="brand-badge" aria-hidden="true">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2 L19 16 L12 12.5 L5 16 Z" fill="#DE3341"/>
+          <circle cx="12" cy="19.5" r="1.6" fill="#DE3341"/>
+        </svg>
+      </span>
+      <div class="brand-text">
+        <h1>Rocket Relay</h1>
+        <span class="tag">Banker Script Console</span>
+      </div>
+    </div>
+    <div class="call-meta">
+      <span class="mono">Call <strong>#4471</strong></span>
+      <span>Banker <strong>Jordan Alvarez</strong></span>
+      <span>Client <strong>Morgan Lee</strong></span>
+      <span class="status-pill">Reviewing</span>
+      <button class="reset-btn" id="resetBtn" type="button">Reset demo</button>
+    </div>
+  </div>
+
+  <div class="layout">
+
+    <!-- BANANA PHONE PANEL -->
+    <aside class="panel banana-panel">
+      <div class="panel-head">
+        <h2><svg class="banana-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><path d="M5 19c6 1 13-2 15-9-3 1-5 3-6 6" stroke="#DE3341" stroke-width="1.6" stroke-linecap="round" fill="#fcebed"/><path d="M19 5c1 1.5 1 4-1 6" stroke="#DE3341" stroke-width="1.6" stroke-linecap="round"/></svg> Opportunity feed</h2>
+      </div>
+      <div class="banana-source-note">Sourced from <strong>Banana Phone</strong> — a hypothetical third-party call-scoring integration shown for concept purposes only.</div>
+      <div class="panel-body">
+        <div class="eyebrow" style="margin-bottom:10px;">Top opportunity calls today</div>
+
+        <div class="opp-call is-current">
+          <div class="opp-call-top"><span class="name">Morgan Lee</span><span class="id mono">#4471</span></div>
+          <div class="opp-score-row"><div class="opp-score-bar"><div class="opp-score-fill" style="width:92%"></div></div><span class="opp-score-num">92</span></div>
+          <div class="opp-reason">Rate-sensitive refi, hard close deadline</div>
+          <span class="opp-current-flag">● Viewing this call</span>
+        </div>
+
+        <div class="opp-call">
+          <div class="opp-call-top"><span class="name">Dana Whitfield</span><span class="id mono">#4438</span></div>
+          <div class="opp-score-row"><div class="opp-score-bar"><div class="opp-score-fill" style="width:87%"></div></div><span class="opp-score-num">87</span></div>
+          <div class="opp-reason">Pre-qualified, comparing two lenders</div>
+        </div>
+
+        <div class="opp-call">
+          <div class="opp-call-top"><span class="name">Theo Brandt</span><span class="id mono">#4502</span></div>
+          <div class="opp-score-row"><div class="opp-score-bar"><div class="opp-score-fill" style="width:81%"></div></div><span class="opp-score-num">81</span></div>
+          <div class="opp-reason">High DTI, alt-doc income review needed</div>
+        </div>
+
+        <div class="opp-call">
+          <div class="opp-call-top"><span class="name">Priya Nathan</span><span class="id mono">#4509</span></div>
+          <div class="opp-score-row"><div class="opp-score-bar"><div class="opp-score-fill" style="width:74%"></div></div><span class="opp-score-num">74</span></div>
+          <div class="opp-reason">First-time buyer, FHA likely fit</div>
+        </div>
+
+        <div class="script-tip">
+          <span class="eyebrow">Banana Phone script tip</span>
+          <p>For Call #4471: lead with a written Loan Estimate commitment before quoting a rate — Morgan's deadline pressure raises the chance of a verbal-only promise slipping through.</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- TRANSCRIPT PANEL -->
+    <main class="panel transcript-panel">
+      <div class="panel-head">
+        <h2>Call transcript</h2>
+      </div>
+      <div class="transcript-hint">Tap <span class="tagbtn issue" style="padding:2px 7px;">issue</span> or <span class="tagbtn priority" style="padding:2px 7px;">priority</span> on a line to mark it and pin a note. Marked lines feed the panels on the right.</div>
+      <div class="transcript" id="transcript"><!-- rendered by JS --></div>
+    </main>
+
+    <!-- SIDE STACK -->
+    <div class="side-stack">
+
+      <section class="panel issues-panel">
+        <div class="panel-head">
+          <h2>Critical issues</h2>
+          <span class="count-pill" id="issueCount">0</span>
+        </div>
+        <div class="panel-body" id="issueLog">
+          <div class="empty-state">No issues marked yet. Tag a transcript line as an issue to log it here with the regulation and a next step.</div>
+        </div>
+      </section>
+
+      <section class="panel priorities-panel">
+        <div class="panel-head">
+          <h2>Client priorities</h2>
+          <span class="count-pill" id="priorityCount">0</span>
+        </div>
+        <div class="panel-body" id="priorityLog">
+          <div class="empty-state">No priorities marked yet. Tag a transcript line as a priority to track what Morgan actually cares about.</div>
+        </div>
+      </section>
+
+      <section class="panel script-panel">
+        <div class="panel-head"><h2>Script builder</h2></div>
+        <div class="panel-body">
+          <div class="channel-tabs">
+            <button class="channel-tab active" data-channel="sms" type="button">SMS</button>
+            <button class="channel-tab" data-channel="voice" type="button">Voice AI</button>
+          </div>
+          <button class="gen-btn" id="genBtn" type="button" disabled>Generate script</button>
+          <div class="script-output" id="scriptOutput"><span class="ph">Mark at least one moment in the transcript, then generate a draft.</span></div>
+          <div class="script-actions">
+            <button class="approve-btn" id="approveBtn" type="button">Approve &amp; send</button>
+            <button class="change-btn" id="changeBtn" type="button">Make changes</button>
+          </div>
+          <div class="toast" id="toast"></div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <footer class="disclaimer">
+    <strong>Rocket Relay</strong> is a concept mockup styled for Rocket Mortgage with a sample call — not an official Rocket Mortgage product, and not connected to a live call vendor or messaging system. The <strong>Banana Phone</strong> opportunity feed is a hypothetical integration invented for this concept and pulls no real data. Regulatory citations reflect general industry training material and are shown for illustrative purposes only — they are not legal advice and should not be relied on for actual compliance decisions.
+  </footer>
+</div>
+
+<script>
+const transcript = [
+  { speaker:'jordan', name:'Jordan Alvarez', time:'00:02',
+    text:`Hi Morgan, this is Jordan with Rocket Mortgage — thanks for calling back about the refinance.` },
+
+  { speaker:'morgan', name:'Morgan Lee', time:'00:08',
+    text:`Hi Jordan. I really need to get this closed before my lease ends June 30th, so I'm hoping we can move fast.`,
+    priority:{ label:'Hard deadline, not a preference',
+      quote:`"I really need to get this closed before my lease ends June 30th."`,
+      next:`Build the timeline backward from June 30 using TRID's mandatory windows: Loan Estimate due within 3 business days of application, and the Closing Disclosure due at least 3 business days before signing. State the earliest realistic close date against those floors instead of promising speed.` } },
+
+  { speaker:'jordan', name:'Jordan Alvarez', time:'00:15',
+    text:`Got it. Before we go further — are you refinancing your primary residence, or is this a second home or investment property?` },
+
+  { speaker:'morgan', name:'Morgan Lee', time:'00:21',
+    text:`Yes, just my primary home. I want the lowest monthly payment possible, even if the rate's a little higher.`,
+    priority:{ label:'Payment size over rate',
+      quote:`"I want the lowest monthly payment possible, even if the rate's a little higher."`,
+      next:`Walk through the discount points vs. lender credit trade-off and term length (30-yr vs 15-yr) from the product menu — a lender credit or a longer term may serve this priority better than chasing the lowest advertised rate.` } },
+
+  { speaker:'jordan', name:'Jordan Alvarez', time:'00:30',
+    text:`I can give you a sense of today's rate environment, but I can't lock anything yet — by law I have to send you a written Loan Estimate within 3 business days of your application, and that's what spells out the exact rate, fees, and terms.` },
+
+  { speaker:'morgan', name:'Morgan Lee', time:'00:41',
+    text:`Okay, that makes sense — go ahead and send that over.` },
+
+  { speaker:'jordan', name:'Jordan Alvarez', time:'00:46',
+    text:`While I have you — there's actually a different program that pays me a bit better, and I think you'd qualify. Let's go with that one instead of the conventional loan.`,
+    issue:{ reg:'Loan Originator Compensation Rule — Reg Z §1026.36',
+      cite:`MLOs are prohibited from steering a borrower toward a loan because it pays the originator more, and from varying compensation based on loan terms.`,
+      say:`Morgan, I want to revisit that last recommendation — let me show you the conventional option side by side with the other program so you can pick based on what's actually best for you, not what's easiest for me to offer.` } },
+
+  { speaker:'morgan', name:'Morgan Lee', time:'00:58',
+    text:`Sure, whatever you think is best.` },
+
+  { speaker:'jordan', name:'Jordan Alvarez', time:'01:04',
+    text:`For income, I'll need your two most recent pay stubs and last year's tax return since you mentioned consulting work — everything that goes into qualifying you has to be documented.` },
+
+  { speaker:'morgan', name:'Morgan Lee', time:'01:14',
+    text:`Sure, I can send those over today.` },
+
+  { speaker:'jordan', name:'Jordan Alvarez', time:'01:18',
+    text:`Before I pull your credit, I need your okay on file — do I have your permission to run a credit report today?` },
+
+  { speaker:'morgan', name:'Morgan Lee', time:'01:25',
+    text:`Yes, that's fine.` },
+
+  { speaker:'jordan', name:'Jordan Alvarez', time:'01:28',
+    text:`And just to confirm for the file — will this stay your primary residence, or are there any plans to rent it out?` },
+
+  { speaker:'morgan', name:'Morgan Lee', time:'01:36',
+    text:`I'm honestly not sure yet — it depends on my job.` },
+
+  { speaker:'jordan', name:'Jordan Alvarez', time:'01:40',
+    text:`That's fine — I'll note it as undecided for now and have our underwriter follow up before closing. I don't want to guess on that one.` },
+
+  { speaker:'morgan', name:'Morgan Lee', time:'01:50',
+    text:`Okay. Also — I'm really worried about the rate changing on me before we close. Can you guarantee it won't move?`,
+    priority:{ label:'Rate certainty / payment stability',
+      quote:`"I'm really worried about the rate changing on me before we close."`,
+      next:`This points toward a fixed-rate product over an ARM, and toward getting the rate lock in writing fast. Pair this with a CHARM-style explanation only if an ARM is genuinely on the table — otherwise keep the conversation on fixed-rate terms to match the stated concern.` } },
+
+  { speaker:'jordan', name:'Jordan Alvarez', time:'02:01',
+    text:`Don't worry about it — I'll just tell you it's locked, you don't need anything in writing for that.`,
+    issue:{ reg:'TILA / Reg Z — Written rate lock requirement',
+      cite:`Rate lock terms, including the locked rate, lock period, and any extension fees, must be documented in writing — a verbal-only assurance does not satisfy disclosure requirements.`,
+      say:`I also want to follow up properly on the rate — I'm sending you a signed Rate Lock Agreement today with the exact rate, the lock period, and what happens if it needs to be extended, so it's official in writing.` } },
+
+  { speaker:'morgan', name:'Morgan Lee', time:'02:09',
+    text:`Okay, that's a relief.` },
+
+  { speaker:'jordan', name:'Jordan Alvarez', time:'02:13',
+    text:`Last thing — I'll have my brother's title company handle the closing. He gives me a referral fee for sending business his way.`,
+    issue:{ reg:'RESPA Section 8 — Anti-kickback',
+      cite:`RESPA Section 8 prohibits paying or receiving a fee, kickback, or thing of value for the referral of settlement service business.`,
+      say:`One more thing on the title company — you're free to choose your own provider. I can send you a couple of options, or you're welcome to pick your own; there's no obligation to use the one I mentioned.` } },
+
+  { speaker:'morgan', name:'Morgan Lee', time:'02:24',
+    text:`Sounds fine to me, I just want this done quickly.`,
+    priority:{ label:'Speed, reiterated',
+      quote:`"I just want this done quickly."`,
+      next:`Reinforce that the fastest legitimate path is to get the Loan Estimate out today and respond fast to any document requests — not to skip disclosures, which would create delay risk later if errors require a corrected disclosure and a new waiting period.` } },
+
+  { speaker:'jordan', name:'Jordan Alvarez', time:'02:31',
+    text:`I'll get your Loan Estimate out today, and you'll get the Closing Disclosure at least 3 business days before we sign anything — that's the fastest path that still keeps you fully informed at each step.` },
+
+  { speaker:'morgan', name:'Morgan Lee', time:'02:42',
+    text:`Okay, thanks Jordan — just keep me posted on timing since my lease is the big constraint.`,
+    priority:{ label:'Timeline, reiterated',
+      quote:`"My lease is the big constraint."`,
+      next:`Send a written timeline anchored to the June 30 deadline, showing the Loan Estimate, appraisal, underwriting, and Closing Disclosure windows so the deadline is managed with documents in hand, not promises.` } },
+];
+
+const transcriptEl = document.getElementById('transcript');
+const issueLog = document.getElementById('issueLog');
+const priorityLog = document.getElementById('priorityLog');
+const issueCount = document.getElementById('issueCount');
+const priorityCount = document.getElementById('priorityCount');
+const genBtn = document.getElementById('genBtn');
+const scriptOutput = document.getElementById('scriptOutput');
+const toast = document.getElementById('toast');
+
+let markedIssues = [];
+let markedPriorities = [];
+let activeChannel = 'sms';
+
+function renderTranscript(){
+  transcriptEl.innerHTML = '';
+  transcript.forEach((line, idx) => {
+    const row = document.createElement('div');
+    row.className = 't-row';
+    if(line.issue) row.classList.add('has-issue');
+    if(line.priority) row.classList.add('has-priority');
+
+    let buttonsHtml = '';
+    if(line.issue){
+      buttonsHtml += `<button class="tagbtn issue" data-idx="${idx}" data-kind="issue" type="button">Mark issue</button>`;
+    }
+    if(line.priority){
+      buttonsHtml += `<button class="tagbtn priority" data-idx="${idx}" data-kind="priority" type="button">Mark priority</button>`;
+    }
+
+    let annotHtml = '';
+    if(line.issue){
+      annotHtml += `<div class="annot issue" id="annot-issue-${idx}">
+        <span class="annot-label">${line.issue.reg} <span class="for-banker">— for Jordan only</span></span>
+        <span class="cite">${line.issue.cite}</span>
+        <div class="next"><b>Say to client:</b> &ldquo;${line.issue.say}&rdquo;</div>
+      </div>`;
+    }
+    if(line.priority){
+      annotHtml += `<div class="annot priority" id="annot-priority-${idx}">
+        <span class="annot-label">${line.priority.label}</span>
+        <span class="cite">${line.priority.quote}</span>
+        <div class="next"><b>Correlate:</b> ${line.priority.next}</div>
+      </div>`;
+    }
+
+    row.innerHTML = `
+      <div class="t-marker"><span class="tick"></span></div>
+      <div class="t-bubble">
+        <div class="t-speaker-line">
+          <span class="t-speaker ${line.speaker}">${line.name}</span>
+          <span class="t-time mono">${line.time}</span>
+        </div>
+        <div class="t-text">${line.text}</div>
+        ${buttonsHtml ? `<div class="t-tagbtns">${buttonsHtml}</div>` : ''}
+        ${annotHtml}
+      </div>
+    `;
+    transcriptEl.appendChild(row);
+  });
+
+  transcriptEl.querySelectorAll('.tagbtn').forEach(btn => {
+    btn.addEventListener('click', () => toggleMark(btn));
+  });
+}
+
+function toggleMark(btn){
+  const idx = Number(btn.dataset.idx);
+  const kind = btn.dataset.kind;
+  const line = transcript[idx];
+  const row = btn.closest('.t-row');
+  const annot = document.getElementById(`annot-${kind}-${idx}`);
+  const isActive = btn.classList.contains('active');
+
+  btn.classList.toggle('active', !isActive);
+  annot.classList.toggle('open', !isActive);
+  row.classList.toggle('is-marked', !isActive);
+
+  if(kind === 'issue'){
+    if(!isActive){
+      markedIssues.push({idx, ...line.issue});
+    } else {
+      markedIssues = markedIssues.filter(i => i.idx !== idx);
+    }
+    renderIssueLog();
+  } else {
+    if(!isActive){
+      markedPriorities.push({idx, ...line.priority});
+    } else {
+      markedPriorities = markedPriorities.filter(p => p.idx !== idx);
+    }
+    renderPriorityLog();
+  }
+
+  genBtn.disabled = (markedIssues.length === 0 && markedPriorities.length === 0);
+}
+
+function renderIssueLog(){
+  issueCount.textContent = markedIssues.length;
+  if(markedIssues.length === 0){
+    issueLog.innerHTML = `<div class="empty-state">No issues marked yet. Tag a transcript line as an issue to log it here with the regulation and a next step.</div>`;
+    return;
+  }
+  issueLog.innerHTML = markedIssues.map(i => `
+    <div class="log-card">
+      <div class="reg">${i.reg} <span class="for-banker">— for Jordan only</span></div>
+      <div class="quote">${i.cite}</div>
+      <div class="next"><b>Say to client:</b> &ldquo;${i.say}&rdquo;</div>
+    </div>
+  `).join('');
+}
+
+function renderPriorityLog(){
+  priorityCount.textContent = markedPriorities.length;
+  if(markedPriorities.length === 0){
+    priorityLog.innerHTML = `<div class="empty-state">No priorities marked yet. Tag a transcript line as a priority to track what Morgan actually cares about.</div>`;
+    return;
+  }
+  priorityLog.innerHTML = markedPriorities.map(p => `
+    <div class="log-card">
+      <div class="reg">${p.label}</div>
+      <div class="quote">${p.quote}</div>
+      <div class="next"><b>Correlated to:</b> ${p.next}</div>
+    </div>
+  `).join('');
+}
+
+document.querySelectorAll('.channel-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.channel-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    activeChannel = tab.dataset.channel;
+  });
+});
+
+genBtn.addEventListener('click', () => {
+  if(markedIssues.length === 0 && markedPriorities.length === 0) return;
+
+  const priorityLines = markedPriorities.map(p => `- ${p.label}: ${p.next}`).join('\n');
+  const issueSayLines = markedIssues.map(i => `"${i.say}"`).join('\n\n');
+
+  let draft = '';
+  if(activeChannel === 'sms'){
+    draft += `Hi Morgan, this is Jordan with Rocket Mortgage following up on our call.\n\n`;
+    if(markedIssues.length){
+      draft += markedIssues.map(i => i.say).join('\n\n') + '\n';
+    }
+    if(markedPriorities.length){
+      draft += `\nKeeping your June 30 timeline front and center — I'll text you at each step (Loan Estimate, appraisal, underwriting, Closing Disclosure) so there are no surprises.\n`;
+    }
+    draft += `\nText me anytime with questions. – Jordan`;
+  } else {
+    draft += `[Voice AI prep — Call #4471, Morgan Lee]\n\n`;
+    if(issueSayLines){
+      draft += `[Say to Morgan]\n${issueSayLines}\n\n`;
+    }
+    if(priorityLines){
+      draft += `[Client priorities to address]\n${priorityLines}\n\n`;
+    }
+    draft += `"I'll have Jordan call you back today with everything in writing. Thanks, Morgan."`;
+  }
+
+  scriptOutput.textContent = draft;
+});
+
+document.getElementById('approveBtn').addEventListener('click', () => {
+  if(scriptOutput.textContent.includes('Mark at least one')){
+    showToast('Generate a script before approving.');
+    return;
+  }
+  showToast('Draft approved (concept demo — nothing was actually sent).');
+});
+
+document.getElementById('changeBtn').addEventListener('click', () => {
+  showToast('Marked for edits (concept demo).');
+});
+
+function showToast(msg){
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => toast.classList.remove('show'), 3200);
+}
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  markedIssues = [];
+  markedPriorities = [];
+  genBtn.disabled = true;
+  scriptOutput.innerHTML = `<span class="ph">Mark at least one moment in the transcript, then generate a draft.</span>`;
+  toast.classList.remove('show');
+  renderTranscript();
+  renderIssueLog();
+  renderPriorityLog();
+});
+
+renderTranscript();
+</script>
+</body>
+</html>
